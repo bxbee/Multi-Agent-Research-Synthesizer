@@ -1,0 +1,185 @@
+{
+  "name": "Research Multi-Agent System",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "trigger-research",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "e1f1-webhook",
+      "name": "Webhook (Trigger)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [200, 300],
+      "webhookId": "research-agent-webhook"
+    },
+    {
+      "parameters": {
+        "url": "={{'http://export.arxiv.org/api/query?search_query=all:' + ($json.body.topic || 'Retrieval Augmented Generation') + '&start=0&max_results=15&sortBy=submittedDate&sortOrder=descending'}}",
+        "options": {}
+      },
+      "id": "e1f2-search",
+      "name": "Search Agent (arXiv API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "e1f3-xml",
+      "name": "XML to JSON",
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.5-flash",
+        "prompt": "=Provide a 200-300 word summary highlighting contributions and methods for the following abstracts extracted from arXiv:\n\n{{ JSON.stringify($json.root.entry) }}",
+        "options": {}
+      },
+      "id": "e1f4-summarize",
+      "name": "Summarization Agent",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [860, 300],
+      "credentials": {
+        "googleGeminiApi": {
+          "id": "your-gemini-cred",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.5-flash",
+        "prompt": "=Generate APA citations for the following papers:\n\n{{ JSON.stringify($node['XML to JSON'].json.root.entry) }}",
+        "options": {}
+      },
+      "id": "e1f5-cite",
+      "name": "Citation Agent",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [1080, 180],
+      "credentials": {
+        "googleGeminiApi": {
+          "id": "your-gemini-cred",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.5-flash",
+        "prompt": "=Based on the following summaries, identify related research fields and suggest 5 related high-level concepts for further reading:\n\n{{ $node['Summarization Agent'].json.text }}",
+        "options": {}
+      },
+      "id": "e1f6-similar",
+      "name": "Similarity Agent",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [1080, 420],
+      "credentials": {
+        "googleGeminiApi": {
+          "id": "your-gemini-cred",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.5-flash",
+        "prompt": "=You are an expert academic researcher. Write a structured 5-page literature review (~2500 words) based on the following contexts.\n\nRequired Sections:\n- Title & Abstract\n- Background\n- Methods and Approaches\n- Core Results and Agreements\n- Conflicts and Divergent Findings\n- Open Questions and Future Directions\n- Conclusion\n\nSummaries:\n{{ $node['Summarization Agent'].json.text }}\n\nCitations:\n{{ $node['Citation Agent'].json.text }}\n\nSimilar Works:\n{{ $node['Similarity Agent'].json.text }}",
+        "options": {}
+      },
+      "id": "e1f7-synthesize",
+      "name": "Synthesis Agent",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [1300, 300],
+      "credentials": {
+        "googleGeminiApi": {
+          "id": "your-gemini-cred",
+          "name": "Google Gemini API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook (Trigger)": {
+      "main": [
+        [
+          {
+            "node": "Search Agent (arXiv API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Agent (arXiv API)": {
+      "main": [
+        [
+          {
+            "node": "XML to JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML to JSON": {
+      "main": [
+        [
+          {
+            "node": "Summarization Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarization Agent": {
+      "main": [
+        [
+          {
+            "node": "Citation Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Similarity Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Citation Agent": {
+      "main": [
+        [
+          {
+            "node": "Synthesis Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Similarity Agent": {
+      "main": [
+        [
+          {
+            "node": "Synthesis Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -117,5 +117,31 @@ async def main():
                 
         print("Synthesis complete! Check 'synthesis_report.md'")
 
+async def run_synthesis_on_files(api_key: str, pdf_files: list) -> str:
+    synthesizer = PaperSynthesizer(api_key=api_key)
+    
+    tasks = []
+    print(f"Ingesting and summarizing {len(pdf_files)} PDFs in parallel...")
+    for pdf in pdf_files:
+        text = PDFIngestor.extract_text(pdf)
+        if text:
+            paper_name = os.path.basename(pdf)
+            tasks.append(synthesizer.summarize_paper(text, paper_name))
+            
+    if not tasks:
+        raise ValueError("No text could be extracted from the provided PDFs.")
+        
+    summaries = await asyncio.gather(*tasks)
+    
+    print("Synthesizing final literature review...")
+    final_review = await synthesizer.synthesize(summaries)
+    
+    report = "# Research Paper Synthesis Report\n\n"
+    report += final_review + "\n\n## Individual Summaries\n\n"
+    for summary in summaries:
+        report += summary + "\n"
+        
+    return report
+
 if __name__ == "__main__":
     asyncio.run(main())
