@@ -1,4 +1,4 @@
-# Research Paper Synthesizer 🧠
+# Research Paper Synthesizer 
 
 <p align="center">
   <img src="assets/logo.png" alt="Research Paper Synthesizer Logo" width="400"/>
