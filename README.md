@@ -7,7 +7,7 @@
 An intelligent, multi-agent AI pipeline that ingests, summarizes, and synthesizes multiple academic research papers in parallel using **Gemini 2.5 Flash** and `google-genai`.
 Research Paper Synthesizer is a Python application that reads academic PDF papers, summarizes them with Gemini, and combines the results into one literature review.
 
-## What The Project Includes
+## What The Project Includes :
 
 - `app.py`: FastAPI backend for the browser-based app
 - `synthesizer.py`: PDF extraction and Gemini synthesis logic
