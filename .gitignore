@@ -5,3 +5,7 @@ __pycache__/
 *.pdf
 papers/
 *.log
+*.env
+.env.local
+.env.production
+.env.development
