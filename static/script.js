@@ -1,233 +1,269 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Modes
-    const toggleTopic = document.getElementById('toggle-topic');
-    const togglePdf = document.getElementById('toggle-pdf');
-    const modeTopic = document.getElementById('mode-topic');
-    const modePdf = document.getElementById('mode-pdf');
-
-    // Inputs
-    const topicInput = document.getElementById('topic-input');
-    const dropZone = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-    const fileList = document.getElementById('file-list');
-    const synthesizeBtn = document.getElementById('synthesize-btn');
-    const errorMsg = document.getElementById('error-msg');
-
-    // Screens
-    const uploadScreen = document.getElementById('upload-screen');
-    const processingScreen = document.getElementById('processing-screen');
-    const resultsScreen = document.getElementById('results-screen');
-    const reportContent = document.getElementById('report-content');
+    // DOM Elements
+    const chatInput = document.getElementById('chat-input');
+    const chatForm = document.getElementById('chat-form');
+    const sendBtn = document.getElementById('send-btn');
+    const chatMessages = document.getElementById('chat-messages');
     
-    // Status list
-    const statusList = document.getElementById('status-list');
+    const fileUpload = document.getElementById('file-upload');
+    const attachmentPreview = document.getElementById('attachment-preview');
+    
+    const loadingIndicator = document.getElementById('loading-indicator');
+    
+    const researchPanel = document.getElementById('research-panel');
+    const reportContent = document.getElementById('report-content');
+    const closePanelBtn = document.getElementById('close-panel-btn');
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+    
+    const themeToggle = document.getElementById('theme-toggle');
+    const newChatBtn = document.getElementById('new-chat-btn');
+    const historyList = document.getElementById('history-list');
 
-    let currentMode = 'topic';
     let selectedFiles = [];
+    let pollInterval = null;
 
-    // --- Mode Toggling ---
-    toggleTopic.addEventListener('click', () => {
-        currentMode = 'topic';
-        toggleTopic.classList.add('active');
-        togglePdf.classList.remove('active');
-        modeTopic.classList.add('active-section');
-        modeTopic.classList.remove('hidden-section');
-        modePdf.classList.add('hidden-section');
-        modePdf.classList.remove('active-section');
-        validateInputs();
+    // --- History Dummy Data ---
+    const dummyHistory = [
+        "Quantum Error Correction",
+        "RAG Architectures 2026",
+        "Multi-Agent AI Ethics",
+        "CRISPR-Cas9 Off-Target Effects"
+    ];
+    
+    function renderHistory() {
+        historyList.innerHTML = '';
+        dummyHistory.forEach((topic, idx) => {
+            const li = document.createElement('li');
+            li.className = `history-item ${idx === 0 ? 'active' : ''}`;
+            li.innerHTML = `<i class="fa-regular fa-message"></i> <span>${topic}</span>`;
+            historyList.appendChild(li);
+        });
+    }
+    renderHistory();
+
+    // --- Theme Toggle ---
+    themeToggle.addEventListener('click', () => {
+        const html = document.documentElement;
+        if (html.getAttribute('data-theme') === 'dark') {
+            html.setAttribute('data-theme', 'light');
+            themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i> Dark Mode';
+        } else {
+            html.setAttribute('data-theme', 'dark');
+            themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i> Light Mode';
+        }
     });
 
-    togglePdf.addEventListener('click', () => {
-        currentMode = 'pdf';
-        togglePdf.classList.add('active');
-        toggleTopic.classList.remove('active');
-        modePdf.classList.add('active-section');
-        modePdf.classList.remove('hidden-section');
-        modeTopic.classList.add('hidden-section');
-        modeTopic.classList.remove('active-section');
-        validateInputs();
+    // --- New Chat ---
+    newChatBtn.addEventListener('click', () => {
+        location.reload();
     });
 
-    // --- File Handling (PDF Mode) ---
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('dragover');
+    // --- Chat Input & Textarea Auto-Resize ---
+    chatInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+        validateInput();
     });
 
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('dragover');
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (!sendBtn.disabled) {
+                chatForm.dispatchEvent(new Event('submit'));
+            }
+        }
     });
 
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('dragover');
-        handleFiles(e.dataTransfer.files);
-    });
-
-    fileInput.addEventListener('change', () => {
-        handleFiles(fileInput.files);
-    });
-
-    function handleFiles(files) {
-        for (let file of files) {
+    // --- File Handling ---
+    fileUpload.addEventListener('change', () => {
+        const files = Array.from(fileUpload.files);
+        files.forEach(file => {
             if (file.type === "application/pdf" && !selectedFiles.some(f => f.name === file.name)) {
                 selectedFiles.push(file);
             }
-        }
-        renderFileList();
-        validateInputs();
-    }
-
-    function renderFileList() {
-        fileList.innerHTML = '';
-        selectedFiles.forEach((file, index) => {
-            const el = document.createElement('div');
-            el.className = 'file-item';
-            el.innerHTML = `<span>${file.name}</span><button class="remove" data-idx="${index}">✕</button>`;
-            fileList.appendChild(el);
         });
+        renderAttachments();
+        validateInput();
+        fileUpload.value = ''; // reset
+    });
 
-        document.querySelectorAll('.remove').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const idx = e.target.getAttribute('data-idx');
-                selectedFiles.splice(idx, 1);
-                renderFileList();
-                validateInputs();
+    function renderAttachments() {
+        attachmentPreview.innerHTML = '';
+        if (selectedFiles.length > 0) {
+            attachmentPreview.classList.remove('hidden');
+            selectedFiles.forEach((file, index) => {
+                const chip = document.createElement('div');
+                chip.className = 'file-chip';
+                chip.innerHTML = `<i class="fa-solid fa-file-pdf"></i> ${file.name} 
+                                  <button type="button" data-idx="${index}"><i class="fa-solid fa-xmark"></i></button>`;
+                attachmentPreview.appendChild(chip);
             });
-        });
-    }
-
-    // --- Input Validation ---
-    topicInput.addEventListener('input', validateInputs);
-
-    function validateInputs() {
-        errorMsg.textContent = "";
-        if (currentMode === 'topic' && topicInput.value.trim().length > 2) {
-            synthesizeBtn.disabled = false;
-        } else if (currentMode === 'pdf' && selectedFiles.length > 0) {
-            synthesizeBtn.disabled = false;
+            
+            attachmentPreview.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = e.currentTarget.getAttribute('data-idx');
+                    selectedFiles.splice(idx, 1);
+                    renderAttachments();
+                    validateInput();
+                });
+            });
         } else {
-            synthesizeBtn.disabled = true;
+            attachmentPreview.classList.add('hidden');
         }
     }
 
-    // --- Processing Animation Sequence ---
-    const statuses = [
-        "Gathering raw context from specified sources...",
-        "Scouring global scholarly networks...",
-        "Vectorizing literature and passing to Summarization Agent...",
-        "Identifying crucial methods & compressing abstracts...",
-        "Citation Agent mapping API links...",
-        "Discovering contiguous research domains for Related Works...",
-        "Final Synthesis Agent compiling structural logic..."
-    ];
-
-    let statusInterval;
-
-    function startProcessingAnimations() {
-        uploadScreen.classList.remove('active');
-        processingScreen.classList.add('active');
-        
-        statusList.innerHTML = `<li class="status-item active-status">${statuses[0]}</li>`;
-        let step = 1;
-
-        statusInterval = setInterval(() => {
-            if (step < statuses.length) {
-                // Dim previous
-                const prev = statusList.querySelector('.active-status');
-                if (prev) {
-                    prev.classList.remove('active-status');
-                    prev.style.opacity = '0.3';
-                }
-                
-                // Add new
-                const li = document.createElement('li');
-                li.className = 'status-item active-status';
-                li.textContent = statuses[step];
-                statusList.appendChild(li);
-                step++;
-            } else {
-                clearInterval(statusInterval);
-            }
-        }, 15000); // Because backend takes minutes on free tier
+    function validateInput() {
+        const text = chatInput.value.trim();
+        if (text.length > 0 || selectedFiles.length > 0) {
+            sendBtn.disabled = false;
+        } else {
+            sendBtn.disabled = true;
+        }
     }
 
+    // --- Chat DOM Manipulation ---
+    function appendUserMessage(text, files) {
+        let content = '';
+        if (text) content += `<p>${text}</p>`;
+        if (files && files.length > 0) {
+            content += `<div style="margin-top: 8px; font-size: 0.9em; opacity: 0.9;">
+                            <i class="fa-solid fa-paperclip"></i> Attached ${files.length} PDF(s)
+                        </div>`;
+        }
 
-    // --- API Submission ---
-    synthesizeBtn.addEventListener('click', async () => {
-        startProcessingAnimations();
+        const msgHTML = `
+            <div class="message user-message">
+                <div class="avatar user-avatar"><i class="fa-solid fa-user"></i></div>
+                <div class="message-content">
+                    ${content}
+                </div>
+            </div>
+        `;
+        chatMessages.insertAdjacentHTML('beforeend', msgHTML);
+        scrollToBottom();
+    }
 
+    function appendAIMessage(htmlContent) {
+        const msgHTML = `
+            <div class="message ai-message">
+                <div class="avatar ai-avatar"><i class="fa-solid fa-robot"></i></div>
+                <div class="message-content bubble-glass">
+                    ${htmlContent}
+                </div>
+            </div>
+        `;
+        chatMessages.insertAdjacentHTML('beforeend', msgHTML);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        chatMessages.scrollTo({
+            top: chatMessages.scrollHeight,
+            behavior: 'smooth'
+        });
+    }
+
+    // --- API & Synthesis Flow ---
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const topic = chatInput.value.trim();
+        const filesToUpload = [...selectedFiles];
+        
+        if (!topic && filesToUpload.length === 0) return;
+
+        // 1. UI Updates
+        appendUserMessage(topic, filesToUpload);
+        
+        chatInput.value = '';
+        chatInput.style.height = 'auto';
+        selectedFiles = [];
+        renderAttachments();
+        validateInput();
+        
+        chatInput.disabled = true;
+        fileUpload.disabled = true;
+        
+        loadingIndicator.classList.remove('hidden');
+        scrollToBottom();
+
+        // 2. Submit to API
         const formData = new FormData();
-        
-        if (currentMode === 'topic') {
-            formData.append('topic', topicInput.value.trim());
-        } else {
-            selectedFiles.forEach(f => {
-                formData.append('files', f);
-            });
-        }
+        if (topic) formData.append('topic', topic);
+        filesToUpload.forEach(f => formData.append('files', f));
 
         try {
             const response = await fetch('/api/synthesize', {
                 method: 'POST',
                 body: formData
             });
-
             const data = await response.json();
             
-            if (!response.ok) {
-                throw new Error(data.detail || "Encountered an unknown error starting synthesis.");
-            }
+            if (!response.ok) throw new Error(data.detail || "Failed to start synthesis.");
             
             const taskId = data.task_id;
             
-            // Poll for completion
-            const pollInterval = setInterval(async () => {
+            // 3. Poll Status
+            pollInterval = setInterval(async () => {
                 try {
                     const statusRes = await fetch(`/api/status/${taskId}`);
                     const statusData = await statusRes.json();
                     
                     if (statusData.status === "completed") {
                         clearInterval(pollInterval);
-                        clearInterval(statusInterval);
-                        reportContent.innerHTML = marked.parse(statusData.report);
-                        processingScreen.classList.remove('active');
-                        resultsScreen.classList.add('active');
+                        finishSynthesis(statusData.report);
                     } else if (statusData.status === "error") {
                         clearInterval(pollInterval);
-                        clearInterval(statusInterval);
-                        processingScreen.classList.remove('active');
-                        uploadScreen.classList.add('active');
-                        errorMsg.textContent = statusData.detail || "Error processing files";
+                        handleError(statusData.detail);
                     }
                 } catch(err) {
                     console.error("Polling error", err);
                 }
-            }, 3000); // Check every 3 seconds
+            }, 3000);
 
         } catch (err) {
-            clearInterval(statusInterval);
-            processingScreen.classList.remove('active');
-            uploadScreen.classList.add('active');
-            errorMsg.textContent = err.message;
+            handleError(err.message);
         }
     });
 
-    // --- Results Actions ---
-    document.getElementById('back-btn').addEventListener('click', () => {
-        resultsScreen.classList.remove('active');
-        uploadScreen.classList.add('active');
-        topicInput.value = '';
-        selectedFiles = [];
-        renderFileList();
-        validateInputs();
-        reportContent.innerHTML = '';
+    function finishSynthesis(markdownReport) {
+        loadingIndicator.classList.add('hidden');
+        chatInput.disabled = false;
+        fileUpload.disabled = false;
+        
+        // Chat Message
+        appendAIMessage(`
+            <p><i class="fa-solid fa-circle-check" style="color: #10b981;"></i> Synthesis Complete!</p>
+            <p style="margin-top: 10px;">I've gathered the research, analyzed the documents, and compiled a comprehensive literature review. I've opened it in the Research Panel for you.</p>
+        `);
+
+        // Populate Right Panel
+        reportContent.innerHTML = marked.parse(markdownReport);
+        researchPanel.classList.remove('collapsed');
+    }
+
+    function handleError(errorMsg) {
+        loadingIndicator.classList.add('hidden');
+        chatInput.disabled = false;
+        fileUpload.disabled = false;
+        
+        appendAIMessage(`
+            <p><i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> An error occurred during synthesis:</p>
+            <p style="margin-top: 10px; color: #ef4444;">${errorMsg}</p>
+        `);
+    }
+
+    // --- Right Panel Actions ---
+    closePanelBtn.addEventListener('click', () => {
+        researchPanel.classList.add('collapsed');
     });
 
-    document.getElementById('download-pdf-btn').addEventListener('click', () => {
+    exportPdfBtn.addEventListener('click', () => {
         const element = document.getElementById('report-content');
+        if(element.querySelector('.empty-state')) return; // nothing to export
+        
         const opt = {
-            margin:       1,
+            margin:       0.5,
             filename:     'Agentic_Research_Synthesis.pdf',
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2 },

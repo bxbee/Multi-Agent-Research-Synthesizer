@@ -1,90 +1,117 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Synthesize AI - Agentic Research</title>
-    <!-- Use Outfit font for a premium modern aesthetic -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>Research Synthesizer - AI Assistant</title>
+    <!-- Use Inter font for a modern chat aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/style.css">
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
-    <div class="background-globes">
-        <div class="globe globe-1"></div>
-        <div class="globe globe-2"></div>
-        <div class="globe globe-3"></div>
-        <div class="globe globe-4"></div>
+    <div class="background-particles">
+        <!-- Floating particles animation will be handled by CSS -->
+        <div class="particle p1"></div>
+        <div class="particle p2"></div>
+        <div class="particle p3"></div>
+        <div class="particle p4"></div>
+        <div class="particle p5"></div>
     </div>
-    
-    <div class="glass-container">
-        <!-- HEADER -->
-        <header>
-            <h1 class="neon-text">Synthesize<span class="accent">AI</span></h1>
-            <p>Unleash our autonomous multi-agent pipeline to research, summarize, and synthesize knowledge.</p>
-        </header>
 
-        <!-- SCREEN 1: INPUT MODES -->
-        <div id="upload-screen" class="screen active">
-            <div class="mode-toggles">
-                <button id="toggle-topic" class="mode-btn active">Deep Topic Search</button>
-                <button id="toggle-pdf" class="mode-btn">Local PDF Analysis</button>
-            </div>
-
-            <!-- TOPIC MODE -->
-            <div id="mode-topic" class="input-section active-section">
-                <h2 class="section-title">Query the Academic Universe</h2>
-                <p class="section-sub">Agents will fetch real-time papers from arXiv, read them, generate citations, and draft a cohesive synthesis.</p>
-                <div class="input-group">
-                    <input type="text" id="topic-input" placeholder="e.g., Quantum Error Correction, RAG Architectures..." autocomplete="off">
-                    <div class="input-border-glow"></div>
-                </div>
-            </div>
-
-            <!-- PDF MODE -->
-            <div id="mode-pdf" class="input-section hidden-section">
-                <h2 class="section-title">Analyze Local Documents</h2>
-                <p class="section-sub">Upload your own papers. Agents will immediately digest the texts to synthesize shared findings.</p>
-                <div id="drop-zone" class="drop-zone">
-                    <div class="icon">📄</div>
-                    <h3>Drag & Drop PDFs here</h3>
-                    <p>or</p>
-                    <label for="file-input" class="btn primary-btn btn-hover">Browse Files</label>
-                    <input type="file" id="file-input" multiple accept=".pdf" hidden />
-                </div>
-                <div id="file-list" class="file-list"></div>
+    <div class="app-container">
+        <!-- LEFT SIDEBAR -->
+        <aside id="sidebar" class="glass-panel">
+            <div class="sidebar-header">
+                <button id="new-chat-btn" class="btn primary-btn btn-hover full-width">
+                    <i class="fa-solid fa-plus"></i> New Synthesis
+                </button>
             </div>
             
-            <button id="synthesize-btn" class="btn neon-btn pulse-loop" disabled>Deploy Agents</button>
-            <div id="error-msg" class="error-text"></div>
-        </div>
-
-        <!-- SCREEN 2: PROCESSING (DYNAMIC ANIMATION) -->
-        <div id="processing-screen" class="screen hidden">
-            <div class="agent-loader">
-                <div class="core-glow"></div>
-                <div class="orbit orbit-1"> <div class="satellite"></div> </div>
-                <div class="orbit orbit-2"> <div class="satellite"></div> </div>
-                <div class="orbit orbit-3"> <div class="satellite"></div> </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">Recent Topics</h3>
+                <ul id="history-list" class="history-list">
+                    <!-- History populated via JS -->
+                </ul>
             </div>
-            <h2 class="cyber-heading">Agent Pipeline Active</h2>
-            <ul class="agent-status-list" id="status-list">
-                <li class="status-item active-status">Gathering raw context...</li>
-            </ul>
-        </div>
+            
+            <div class="sidebar-footer">
+                <button id="theme-toggle" class="btn secondary-btn btn-hover full-width">
+                    <i class="fa-solid fa-moon"></i> Dark Mode
+                </button>
+            </div>
+        </aside>
 
-        <!-- SCREEN 3: RESULTS -->
-        <div id="results-screen" class="screen hidden">
-            <div class="results-actions">
-                <button id="back-btn" class="btn secondary-btn btn-hover">← New Research</button>
-                <button id="download-pdf-btn" class="btn neon-btn small-btn">Export PDF</button>
+        <!-- MAIN CHAT AREA -->
+        <main id="main-chat" class="glass-panel">
+            <header class="chat-header">
+                <div class="header-title">
+                    <i class="fa-solid fa-atom pulse-icon"></i>
+                    <h2>Research Synthesizer <span class="accent">AI</span></h2>
+                </div>
+            </header>
+            
+            <div id="chat-messages" class="chat-messages custom-scroll">
+                <!-- Welcome Message -->
+                <div class="message ai-message">
+                    <div class="avatar ai-avatar"><i class="fa-solid fa-robot"></i></div>
+                    <div class="message-content bubble-glass">
+                        <p>Hello! I am your Research Synthesizer AI. What topic would you like me to research today? You can also upload local PDFs for me to analyze.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- DNA Loading Spinner (Hidden by default) -->
+            <div id="loading-indicator" class="loading-container hidden">
+                <div class="dna-spinner">
+                    <div class="dna-strand"></div>
+                    <div class="dna-strand"></div>
+                    <div class="dna-strand"></div>
+                </div>
+                <p class="loading-text">Synthesizing literature...</p>
+            </div>
+
+            <div class="chat-input-wrapper">
+                <div id="attachment-preview" class="attachment-preview hidden">
+                    <!-- Show selected files here -->
+                </div>
+                <form id="chat-form" class="chat-form bubble-glass">
+                    <label for="file-upload" class="icon-btn tooltip" data-tooltip="Attach PDFs">
+                        <i class="fa-solid fa-paperclip"></i>
+                    </label>
+                    <input type="file" id="file-upload" multiple accept=".pdf" hidden />
+                    
+                    <textarea id="chat-input" placeholder="Ask me to synthesize research..." rows="1" autocomplete="off"></textarea>
+                    
+                    <button type="submit" id="send-btn" class="icon-btn primary-icon-btn tooltip" data-tooltip="Send Query" disabled>
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+                <div class="disclaimer">AI can make mistakes. Verify important academic citations.</div>
+            </div>
+        </main>
+
+        <!-- RIGHT PANEL: RESEARCH SUMMARIES -->
+        <aside id="research-panel" class="glass-panel collapsed">
+            <div class="panel-header">
+                <h3><i class="fa-solid fa-book-open"></i> Synthesis Report</h3>
+                <div class="panel-actions">
+                    <button id="export-pdf-btn" class="icon-btn tooltip" data-tooltip="Export PDF"><i class="fa-solid fa-file-pdf"></i></button>
+                    <button id="close-panel-btn" class="icon-btn tooltip" data-tooltip="Close Panel"><i class="fa-solid fa-xmark"></i></button>
+                </div>
             </div>
             <div id="report-content" class="markdown-body custom-scroll">
-                <!-- Synthesized report generated here -->
+                <!-- Markdown rendered report goes here -->
+                <div class="empty-state">
+                    <i class="fa-solid fa-microscope"></i>
+                    <p>No active synthesis. Send a query to generate a report.</p>
+                </div>
             </div>
-        </div>
+        </aside>
     </div>
 
     <script src="/static/script.js"></script>
