@@ -45,6 +45,7 @@ graph TD
     D --> E[Per-Paper Summary]
     E --> F{Reduce: Global Synthesis}
     F --> G((synthesis_report.md))
+```
 ```powershell
 cd D:\ResearchPaperSynthezier
 ```
