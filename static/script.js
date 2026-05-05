@@ -239,6 +239,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Populate Right Panel
         reportContent.innerHTML = marked.parse(markdownReport);
+        
+        // Render Mermaid Diagrams
+        const mermaidBlocks = reportContent.querySelectorAll('.language-mermaid');
+        if (mermaidBlocks.length > 0) {
+            mermaidBlocks.forEach((block) => {
+                const tempDiv = document.createElement('div');
+                tempDiv.className = 'mermaid';
+                tempDiv.textContent = block.textContent;
+                // Replace the parent <pre> with the new div
+                block.parentNode.replaceWith(tempDiv);
+            });
+            // Initialize mermaid on the newly added divs
+            try {
+                mermaid.init(undefined, reportContent.querySelectorAll('.mermaid'));
+            } catch (e) {
+                console.error("Mermaid initialization error", e);
+            }
+        }
+        
         researchPanel.classList.remove('collapsed');
     }
 
@@ -262,6 +281,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const element = document.getElementById('report-content');
         if(element.querySelector('.empty-state')) return; // nothing to export
         
+        // Apply temporary styling and footer for PDF export
+        element.classList.add('pdf-export-mode');
+        const footer = document.createElement('div');
+        footer.id = 'pdf-temp-footer';
+        footer.className = 'pdf-footer';
+        footer.innerHTML = '&copy; Intellectra AI - Copyright Issues';
+        element.appendChild(footer);
+
         const opt = {
             margin:       0.5,
             filename:     'Agentic_Research_Synthesis.pdf',
@@ -270,6 +297,12 @@ document.addEventListener('DOMContentLoaded', () => {
             jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
             pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
         };
-        html2pdf().set(opt).from(element).save();
+        
+        html2pdf().set(opt).from(element).save().then(() => {
+            // Remove temporary styling and footer after export
+            element.classList.remove('pdf-export-mode');
+            const f = document.getElementById('pdf-temp-footer');
+            if (f) f.remove();
+        });
     });
 });

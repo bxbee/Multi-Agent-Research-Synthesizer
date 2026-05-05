@@ -617,3 +617,49 @@ body {
     #sidebar { display: none; /* Can add hamburger menu later */ }
     #research-panel { position: absolute; right: 0; top: 0; height: 100%; z-index: 50; }
 }
+
+/* PDF Export Custom Styles */
+.pdf-export-mode {
+    color: #111827 !important;
+    background-color: #ffffff !important;
+}
+
+.pdf-export-mode h1, 
+.pdf-export-mode h2, 
+.pdf-export-mode h3, 
+.pdf-export-mode p, 
+.pdf-export-mode span {
+    color: #111827 !important;
+}
+
+.pdf-export-mode h2 {
+    color: #111827 !important;
+    border-bottom: 2px solid #eab308;
+    padding-bottom: 4px;
+}
+
+.pdf-export-mode li {
+    background-color: rgba(253, 224, 71, 0.4) !important; /* Soft yellow highlight for points */
+    color: #111827 !important;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    list-style-position: inside;
+}
+
+.pdf-export-mode strong {
+    background-color: #fef08a !important;
+    color: #111827 !important;
+    padding: 0 4px;
+    border-radius: 2px;
+}
+
+.pdf-footer {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #ccc;
+    font-size: 10pt;
+    color: #555;
+    font-weight: bold;
+}

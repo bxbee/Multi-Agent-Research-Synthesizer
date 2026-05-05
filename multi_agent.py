@@ -189,6 +189,10 @@ class SynthesisAgent(Agent):
         Maintain neutrality and synthesize themes rather than listing papers sequentially. Ensure reproducibility, transparency, and academic rigor.
         Embed inline citations where appropriate (e.g., Author, Year).
 
+        CRITICAL INSTRUCTION: Include 2-5 visual figures using Mermaid.js syntax (enclosed in ```mermaid code blocks). 
+        These should summarize frameworks, trends, or models (such as conceptual diagrams, comparison charts, and timelines) rather than raw data. 
+        Integrate them logically into the relevant sections below.
+
         Structure your review with the following main sections:
         # Title
         # Abstract

@@ -63,6 +63,10 @@ class PaperSynthesizer:
         Synthesize these summaries into a cohesive literature review. 
         Highlight common themes, methodologies, conflicting results, and potential gaps in the research.
         
+        CRITICAL INSTRUCTION: Include 2-5 visual figures using Mermaid.js syntax (enclosed in ```mermaid code blocks). 
+        These should summarize frameworks, trends, or models (such as conceptual diagrams, comparison charts, and timelines) rather than raw data. 
+        Integrate them logically into the relevant sections below.
+
         Summaries:
         {combined_summaries}
         
