@@ -44,7 +44,19 @@ class SearchAgent(Agent):
         if state.topic:
             # Query arXiv API
             url = f"http://export.arxiv.org/api/query?search_query=all:{urllib.parse.quote(state.topic)}&start=0&max_results=3&sortBy=submittedDate&sortOrder=descending"
-            response = requests.get(url, timeout=15)
+            
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    response = requests.get(url, timeout=30)
+                    response.raise_for_status()
+                    break
+                except requests.exceptions.RequestException as e:
+                    self.log(f"arXiv API attempt {attempt + 1} failed: {e}")
+                    if attempt == max_retries - 1:
+                        raise Exception(f"Failed to fetch from arXiv after {max_retries} attempts: {e}")
+                    await asyncio.sleep(2 * (attempt + 1))
+            
             root = ET.fromstring(response.content)
             namespace = {'atom': 'http://www.w3.org/2005/Atom'}
             
