@@ -175,18 +175,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             
-            clearInterval(statusInterval);
-
-            if (response.ok) {
-                // Render markdown to HTML
-                reportContent.innerHTML = marked.parse(data.report);
-                
-                // Switch Screens
-                processingScreen.classList.remove('active');
-                resultsScreen.classList.add('active');
-            } else {
-                throw new Error(data.detail || "Encountered an unknown error processing files.");
+            if (!response.ok) {
+                throw new Error(data.detail || "Encountered an unknown error starting synthesis.");
             }
+            
+            const taskId = data.task_id;
+            
+            // Poll for completion
+            const pollInterval = setInterval(async () => {
+                try {
+                    const statusRes = await fetch(`/api/status/${taskId}`);
+                    const statusData = await statusRes.json();
+                    
+                    if (statusData.status === "completed") {
+                        clearInterval(pollInterval);
+                        clearInterval(statusInterval);
+                        reportContent.innerHTML = marked.parse(statusData.report);
+                        processingScreen.classList.remove('active');
+                        resultsScreen.classList.add('active');
+                    } else if (statusData.status === "error") {
+                        clearInterval(pollInterval);
+                        clearInterval(statusInterval);
+                        processingScreen.classList.remove('active');
+                        uploadScreen.classList.add('active');
+                        errorMsg.textContent = statusData.detail || "Error processing files";
+                    }
+                } catch(err) {
+                    console.error("Polling error", err);
+                }
+            }, 3000); // Check every 3 seconds
+
         } catch (err) {
             clearInterval(statusInterval);
             processingScreen.classList.remove('active');

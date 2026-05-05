@@ -44,7 +44,7 @@ class SearchAgent(Agent):
         if state.topic:
             # Query arXiv API
             url = f"http://export.arxiv.org/api/query?search_query=all:{urllib.parse.quote(state.topic)}&start=0&max_results=3&sortBy=submittedDate&sortOrder=descending"
-            response = requests.get(url)
+            response = requests.get(url, timeout=15)
             root = ET.fromstring(response.content)
             namespace = {'atom': 'http://www.w3.org/2005/Atom'}
             

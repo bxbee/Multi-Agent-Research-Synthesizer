@@ -1,7 +1,8 @@
 import os
 import shutil
 import tempfile
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+import uuid
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
@@ -16,13 +17,26 @@ app = FastAPI(title="Research Paper Synthesizer API")
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+tasks = {}
+
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     with open("static/index.html", "r", encoding="utf-8") as f:
         return f.read()
 
+async def run_synthesis_task(task_id: str, api_key: str, topic: str, saved_files: list, temp_dir: str):
+    try:
+        state = await run_workflow(api_key, topic=topic or "", local_pdfs=saved_files)
+        tasks[task_id] = {"status": "completed", "report": state.synthesis_report}
+    except Exception as e:
+        tasks[task_id] = {"status": "error", "detail": str(e)}
+    finally:
+        if temp_dir:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
 @app.post("/api/synthesize")
 async def synthesize_papers(
+    background_tasks: BackgroundTasks,
     topic: str = Form(None),
     files: list[UploadFile] = File(None)
 ):
@@ -48,18 +62,27 @@ async def synthesize_papers(
         if not topic and not saved_files:
             raise HTTPException(status_code=400, detail="Please provide either a Topic string or PDF files.")
             
-        # Run deep agent synthesis
-        state = await run_workflow(api_key, topic=topic or "", local_pdfs=saved_files)
+        task_id = str(uuid.uuid4())
+        tasks[task_id] = {"status": "processing"}
         
-        return JSONResponse(content={"report": state.synthesis_report})
+        background_tasks.add_task(run_synthesis_task, task_id, api_key, topic, saved_files, temp_dir)
+        
+        return JSONResponse(content={"task_id": task_id})
         
     except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
         if temp_dir:
             shutil.rmtree(temp_dir, ignore_errors=True)
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        if temp_dir:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/status/{task_id}")
+async def get_task_status(task_id: str):
+    if task_id not in tasks:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return JSONResponse(content=tasks[task_id])
 
 if __name__ == "__main__":
     import uvicorn
