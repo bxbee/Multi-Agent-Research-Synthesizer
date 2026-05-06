@@ -22,24 +22,48 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedFiles = [];
     let pollInterval = null;
 
-    // --- History Dummy Data ---
-    const dummyHistory = [
-        "Quantum Error Correction",
-        "RAG Architectures 2026",
-        "Multi-Agent AI Ethics",
-        "CRISPR-Cas9 Off-Target Effects"
-    ];
-    
-    function renderHistory() {
-        historyList.innerHTML = '';
-        dummyHistory.forEach((topic, idx) => {
-            const li = document.createElement('li');
-            li.className = `history-item ${idx === 0 ? 'active' : ''}`;
-            li.innerHTML = `<i class="fa-regular fa-message"></i> <span>${topic}</span>`;
-            historyList.appendChild(li);
-        });
+    let currentTaskId = null;
+
+    async function loadHistory() {
+        try {
+            const res = await fetch('/api/history');
+            if (!res.ok) return;
+            const historyData = await res.json();
+            
+            historyList.innerHTML = '';
+            historyData.forEach((item, idx) => {
+                const li = document.createElement('li');
+                li.className = `history-item ${idx === 0 ? 'active' : ''}`;
+                const dateStr = new Date(item.timestamp).toLocaleDateString();
+                li.innerHTML = `<i class="fa-regular fa-message"></i> <span>${item.topic}</span> <span style="font-size: 0.7rem; margin-left: auto;">${dateStr}</span>`;
+                
+                li.addEventListener('click', () => {
+                    document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+                    li.classList.add('active');
+                    loadHistoryItem(item.task_id);
+                });
+                
+                historyList.appendChild(li);
+            });
+        } catch(e) {
+            console.error("Failed to load history", e);
+        }
     }
-    renderHistory();
+    loadHistory();
+
+    async function loadHistoryItem(taskId) {
+        try {
+            loadingIndicator.classList.remove('hidden');
+            const res = await fetch(`/api/history/${taskId}`);
+            if (!res.ok) throw new Error("Failed to load history item");
+            const data = await res.json();
+            
+            loadingIndicator.classList.add('hidden');
+            finishSynthesis(data);
+        } catch(e) {
+            handleError(e.message);
+        }
+    }
 
     // --- Theme Toggle ---
     themeToggle.addEventListener('click', () => {
@@ -211,7 +235,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     if (statusData.status === "completed") {
                         clearInterval(pollInterval);
-                        finishSynthesis(statusData.report);
+                        loadHistory(); // refresh history list
+                        finishSynthesis(statusData);
                     } else if (statusData.status === "error") {
                         clearInterval(pollInterval);
                         handleError(statusData.detail);
@@ -226,10 +251,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function finishSynthesis(markdownReport) {
+    function finishSynthesis(data) {
         loadingIndicator.classList.add('hidden');
         chatInput.disabled = false;
         fileUpload.disabled = false;
+        
+        currentTaskId = data.task_id;
         
         // Chat Message
         appendAIMessage(`
@@ -238,7 +265,29 @@ document.addEventListener('DOMContentLoaded', () => {
         `);
 
         // Populate Right Panel
-        reportContent.innerHTML = marked.parse(markdownReport);
+        reportContent.innerHTML = marked.parse(data.report);
+        
+        // Render Citations
+        const citationsSection = document.getElementById('citations-section');
+        const citationsList = document.getElementById('citations-list');
+        citationsList.innerHTML = '';
+        if (data.citations && data.citations.length > 0) {
+            data.citations.forEach(cit => {
+                citationsList.innerHTML += `<div style="background: rgba(255,255,255,0.05); padding: 0.8rem; border-radius: 4px; border-left: 3px solid var(--accent);"><i class="fa-solid fa-quote-left" style="margin-right: 0.5rem; opacity: 0.5;"></i> ${cit}</div>`;
+            });
+            citationsSection.classList.remove('hidden');
+        } else {
+            citationsSection.classList.add('hidden');
+        }
+        
+        // Render Counter-Questions
+        const cqSection = document.getElementById('counter-questions-section');
+        const cqList = document.getElementById('cq-list');
+        cqList.innerHTML = '';
+        if (data.counter_questions && data.counter_questions.length > 0) {
+            data.counter_questions.forEach(cq => appendCQ(cq.question, cq.answer));
+        }
+        cqSection.classList.remove('hidden');
         
         // Render Mermaid Diagrams
         const mermaidBlocks = reportContent.querySelectorAll('.language-mermaid');
@@ -259,6 +308,51 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         researchPanel.classList.remove('collapsed');
+    }
+
+    const cqForm = document.getElementById('cq-form');
+    const cqInput = document.getElementById('cq-input');
+    const cqList = document.getElementById('cq-list');
+
+    function appendCQ(question, answer) {
+        const html = `
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--radius-sm);">
+                <div style="font-weight: bold; margin-bottom: 0.5rem; color: var(--text-primary);"><i class="fa-solid fa-user"></i> ${question}</div>
+                <div style="color: var(--text-sec); font-size: 0.95rem;">${marked.parse(answer)}</div>
+            </div>
+        `;
+        cqList.insertAdjacentHTML('beforeend', html);
+    }
+
+    if (cqForm) {
+        cqForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentTaskId) return;
+            const q = cqInput.value.trim();
+            if (!q) return;
+            
+            cqInput.value = '';
+            cqInput.disabled = true;
+            cqForm.querySelector('button').disabled = true;
+            
+            try {
+                const res = await fetch('/api/counter_question', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task_id: currentTaskId, question: q })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || "Error asking counter question");
+                appendCQ(data.question, data.answer);
+            } catch(e) {
+                console.error(e);
+                appendCQ(q, "Error: " + e.message);
+            } finally {
+                cqInput.disabled = false;
+                cqForm.querySelector('button').disabled = false;
+                cqInput.focus();
+            }
+        });
     }
 
     function handleError(errorMsg) {
