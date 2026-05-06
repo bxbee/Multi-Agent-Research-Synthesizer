@@ -150,7 +150,7 @@ This is the main user flow of the project.
 
 ## Quick Start
 
-If your environment is already set up, these are the only commands you need:
+If your environment is already set up,these are the only commands you need:
 
 ```powershell
 cd D:\ResearchPaperSynthezier
@@ -199,9 +199,9 @@ synthesis_report.md
 ## How The App Works
 
 1. The app reads uploaded PDF files using `pypdf`.
-2. Each paper is split into chunks if needed.
+2. Papers are split into chunks if needed.
 3. Gemini summarizes each paper.
-4. Gemini combines all summaries into one final literature review.
+4. Gemini merges all summaries into one literature review.
 5. The result is shown in the UI or saved to a Markdown report.
 
 ## Common Problems
