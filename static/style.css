@@ -663,3 +663,34 @@ body {
     color: #555;
     font-weight: bold;
 }
+
+/* Mermaid Diagram Alignment & Scaling */
+.mermaid {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 2rem auto;
+    page-break-inside: avoid; /* Prevent breaking across pages in PDF */
+    max-width: 100%;
+}
+
+.mermaid svg {
+    max-width: 100% !important;
+    height: auto !important;
+    /* Ensure no distortion */
+    object-fit: contain;
+}
+
+/* Caption Alignment (Assumes paragraph directly follows diagram) */
+.mermaid + p {
+    text-align: center;
+    font-style: italic;
+    color: var(--text-sec);
+    margin-top: 0.5rem;
+    margin-bottom: 2rem;
+    page-break-before: avoid; /* Keep caption with image */
+}
+
+.pdf-export-mode .mermaid + p {
+    color: #555 !important;
+}
