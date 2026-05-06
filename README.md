@@ -19,7 +19,7 @@ Research Paper Synthesizer is a Python application that reads academic PDF paper
 
 Before running the project, make sure you have:
 
-- Python 3.10 or newer
+- Python 3.10 or latest 
 - a valid Gemini API key
 - internet access for Gemini API calls
 
