@@ -93,7 +93,7 @@
     {
       "parameters": {
         "model": "gemini-2.5-flash",
-        "prompt": "=You are an expert academic researcher. Write a structured 5-page literature review (~2500 words) based on the following contexts.\n\nRequired Sections:\n- Title & Abstract\n- Background\n- Methods and Approaches\n- Core Results and Agreements\n- Conflicts and Divergent Findings\n- Open Questions and Future Directions\n- Conclusion\n\nSummaries:\n{{ $node['Summarization Agent'].json.text }}\n\nCitations:\n{{ $node['Citation Agent'].json.text }}\n\nSimilar Works:\n{{ $node['Similarity Agent'].json.text }}",
+        "prompt": "=You are an expert academic researcher. Write a structured 5-page literature review (~2500 words) based on the following contexts.\n\nCRITICAL INSTRUCTION: Include 2-5 visual figures using Mermaid.js syntax (enclosed in ```mermaid code blocks). These should summarize frameworks, trends, or models. To prevent Mermaid syntax errors, you MUST:\n1. Quote node labels containing special characters like parentheses, brackets, colons, or quotes (e.g., `id[\"Label (Extra Info)\"]`).\n2. Avoid using any HTML tags in labels.\n\nRequired Sections:\n- Title & Abstract\n- Background\n- Methods and Approaches\n- Core Results and Agreements\n- Conflicts and Divergent Findings\n- Open Questions and Future Directions\n- Conclusion\n\nSummaries:\n{{ $node['Summarization Agent'].json.text }}\n\nCitations:\n{{ $node['Citation Agent'].json.text }}\n\nSimilar Works:\n{{ $node['Similarity Agent'].json.text }}",
         "options": {}
       },
       "id": "e1f7-synthesize",

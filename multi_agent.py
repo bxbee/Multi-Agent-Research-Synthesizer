@@ -203,6 +203,9 @@ class SynthesisAgent(Agent):
 
         CRITICAL INSTRUCTION: Include 2-5 visual figures using Mermaid.js syntax (enclosed in ```mermaid code blocks). 
         These should summarize frameworks, trends, or models (such as conceptual diagrams, comparison charts, and timelines) rather than raw data. 
+        To prevent Mermaid syntax errors, you MUST:
+        1. Quote node labels containing special characters like parentheses, brackets, colons, or quotes (e.g., `id["Label (Extra Info)"]`).
+        2. Avoid using any HTML tags in labels.
         Integrate them logically into the relevant sections below.
 
         Structure your review with the following main sections:
