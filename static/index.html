@@ -21,12 +21,8 @@
     <div class="cursor-glow"></div>
     <div class="cursor-dot"></div>
 
-    <!-- Gradient Background & Particles -->
-    <div class="gradient-bg"></div>
-    <div class="floating-particles">
-        <div class="particle"></div><div class="particle"></div><div class="particle"></div>
-        <div class="particle"></div><div class="particle"></div><div class="particle"></div>
-    </div>
+    <!-- Neural Network Background -->
+    <canvas id="neural-bg" class="neural-bg"></canvas>
 
     <div class="app-container">
         <!-- LEFT SIDEBAR -->
@@ -56,7 +52,7 @@
             <header class="chat-header">
                 <div class="header-title">
                     <i class="fa-solid fa-atom pulse-icon"></i>
-                    <h2>Research <span class="accent">Synthesizer</span></h2>
+                    <h2>Intellectra <span class="accent">AI</span></h2>
                 </div>
             </header>
             
@@ -67,7 +63,7 @@
                         <div class="ai-pulse-ring">
                             <div class="avatar ai-avatar hero-avatar"><i class="fa-solid fa-brain"></i></div>
                         </div>
-                        <h1 class="hero-title">Synthesize <span class="gradient-text">Research</span></h1>
+                        <h1 class="hero-title">Synthesize <span class="gradient-text">Intelligence</span></h1>
                         <p class="hero-subtitle">Upload research papers or enter a topic. Our multi-agent neural pipeline will extract, cross-reference, and generate a comprehensive literature review.</p>
                         
                         <div class="feature-cards">
@@ -89,14 +85,19 @@
             </div>
             
             <!-- Chat Input Area -->
+                <div id="attachment-preview" class="attachment-preview hidden">
+                    <!-- Show selected files here -->
+                </div>
                 <form id="chat-form" class="chat-form bubble-glass">
+                    <label for="file-upload" class="icon-btn tooltip" data-tooltip="Attach PDFs">
+                        <i class="fa-solid fa-paperclip"></i>
+                    </label>
+                    <input type="file" id="file-upload" multiple accept=".pdf" hidden />
+                    
                     <textarea id="chat-input" placeholder="Ask me to synthesize research..." rows="1" autocomplete="off"></textarea>
                     
                     <button type="submit" id="send-btn" class="icon-btn primary-icon-btn tooltip" data-tooltip="Send Query" disabled>
-                        <div class="btn-icon-wrapper">
-                            <i class="fa-solid fa-paper-plane plane-icon"></i>
-                            <i class="fa-solid fa-rocket rocket-icon"></i>
-                        </div>
+                        <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </form>
                 <div class="disclaimer">AI can make mistakes. Verify important academic citations.</div>
