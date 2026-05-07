@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Advanced GSAP & Canvas Visuals ---
+    // --- Advanced GSAP & Visuals ---
     // Custom Cursor
     const cursorGlow = document.querySelector('.cursor-glow');
     const cursorDot = document.querySelector('.cursor-dot');
@@ -11,69 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Neural Network Canvas
-    const canvas = document.getElementById('neural-bg');
-    if (canvas) {
-        const ctx = canvas.getContext('2d');
-        let width, height;
-        let particles = [];
-        
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-        
-        class Particle {
-            constructor() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height;
-                this.vx = (Math.random() - 0.5) * 0.5;
-                this.vy = (Math.random() - 0.5) * 0.5;
-                this.radius = Math.random() * 2 + 1;
-            }
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                if(this.x < 0 || this.x > width) this.vx *= -1;
-                if(this.y < 0 || this.y > height) this.vy *= -1;
-            }
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(124, 58, 237, 0.4)';
-                ctx.fill();
-            }
-        }
-        
-        for(let i=0; i<80; i++) particles.push(new Particle());
-        
-        function animateCanvas() {
-            ctx.clearRect(0, 0, width, height);
-            particles.forEach(p => { p.update(); p.draw(); });
-            
-            for(let i=0; i<particles.length; i++) {
-                for(let j=i+1; j<particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if(dist < 150) {
-                        ctx.beginPath();
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.strokeStyle = `rgba(6, 182, 212, ${(1 - dist/150) * 0.5})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.stroke();
-                    }
-                }
-            }
-            requestAnimationFrame(animateCanvas);
-        }
-        animateCanvas();
-    }
-
-    // Magnetic Buttons (Apply slightly after DOM load)
+    // Magnetic Buttons
     setTimeout(() => {
         document.querySelectorAll('.btn, .icon-btn, .feature-card, .history-item').forEach(el => {
             el.addEventListener('mousemove', (e) => {
@@ -95,9 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendBtn = document.getElementById('send-btn');
     const chatMessages = document.getElementById('chat-messages');
     
-    const fileUpload = document.getElementById('file-upload');
-    const attachmentPreview = document.getElementById('attachment-preview');
-    
     let processedEvents = 0;
     
     const researchPanel = document.getElementById('research-panel');
@@ -109,10 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const newChatBtn = document.getElementById('new-chat-btn');
     const historyList = document.getElementById('history-list');
 
-    let selectedFiles = [];
     let pollInterval = null;
-
     let currentTaskId = null;
+    let activeAgentBubble = null; // Track current agent's chat bubble
 
     async function loadHistory() {
         try {
@@ -143,19 +77,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadHistoryItem(taskId) {
         try {
-            showLoadingIndicator();
+            showGlobalLoadingIndicator();
             const res = await fetch(`/api/history/${taskId}`);
             if (!res.ok) throw new Error("Failed to load history item");
             const data = await res.json();
             
-            removeLoadingIndicator();
-            
-            // Hide landing hero if exists
-            const landingHero = document.getElementById('landing-hero');
-            if (landingHero) {
-                gsap.to(landingHero, { opacity: 0, height: 0, duration: 0.5, onComplete: () => landingHero.remove() });
-            }
-            
+            removeGlobalLoadingIndicator();
+            hideLandingHero();
             finishSynthesis(data);
         } catch(e) {
             handleError(e.message);
@@ -195,68 +123,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- File Handling ---
-    fileUpload.addEventListener('change', () => {
-        const files = Array.from(fileUpload.files);
-        files.forEach(file => {
-            if (file.type === "application/pdf" && !selectedFiles.some(f => f.name === file.name)) {
-                selectedFiles.push(file);
-            }
-        });
-        renderAttachments();
-        validateInput();
-        fileUpload.value = ''; // reset
-    });
-
-    function renderAttachments() {
-        attachmentPreview.innerHTML = '';
-        if (selectedFiles.length > 0) {
-            attachmentPreview.classList.remove('hidden');
-            selectedFiles.forEach((file, index) => {
-                const chip = document.createElement('div');
-                chip.className = 'file-chip';
-                chip.innerHTML = `<i class="fa-solid fa-file-pdf"></i> ${file.name} 
-                                  <button type="button" data-idx="${index}"><i class="fa-solid fa-xmark"></i></button>`;
-                attachmentPreview.appendChild(chip);
-            });
-            
-            attachmentPreview.querySelectorAll('button').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const idx = e.currentTarget.getAttribute('data-idx');
-                    selectedFiles.splice(idx, 1);
-                    renderAttachments();
-                    validateInput();
-                });
-            });
-        } else {
-            attachmentPreview.classList.add('hidden');
-        }
-    }
-
     function validateInput() {
         const text = chatInput.value.trim();
-        if (text.length > 0 || selectedFiles.length > 0) {
-            sendBtn.disabled = false;
-        } else {
-            sendBtn.disabled = true;
+        sendBtn.disabled = text.length === 0;
+    }
+
+    function hideLandingHero() {
+        const landingHero = document.getElementById('landing-hero');
+        if (landingHero) {
+            gsap.to(landingHero, { opacity: 0, height: 0, duration: 0.5, onComplete: () => landingHero.remove() });
         }
     }
 
     // --- Chat DOM Manipulation ---
-    function appendUserMessage(text, files) {
-        let content = '';
-        if (text) content += `<p>${text}</p>`;
-        if (files && files.length > 0) {
-            content += `<div style="margin-top: 8px; font-size: 0.9em; opacity: 0.9;">
-                            <i class="fa-solid fa-paperclip"></i> Attached ${files.length} PDF(s)
-                        </div>`;
-        }
-
+    function appendUserMessage(text) {
         const msgHTML = `
             <div class="message user-message">
                 <div class="avatar user-avatar"><i class="fa-solid fa-user"></i></div>
                 <div class="message-content">
-                    ${content}
+                    <p>${text}</p>
                 </div>
             </div>
         `;
@@ -264,37 +149,38 @@ document.addEventListener('DOMContentLoaded', () => {
         scrollToBottom();
     }
 
-    function appendAIMessage(htmlContent) {
+    function appendAIMessage(htmlContent, customClass = '') {
         const msgHTML = `
             <div class="message ai-message">
                 <div class="avatar ai-avatar"><i class="fa-solid fa-robot"></i></div>
-                <div class="message-content bubble-glass">
+                <div class="message-content bubble-glass ${customClass}">
                     ${htmlContent}
                 </div>
             </div>
         `;
         chatMessages.insertAdjacentHTML('beforeend', msgHTML);
         scrollToBottom();
+        return chatMessages.lastElementChild;
     }
 
     function scrollToBottom() {
-        chatMessages.scrollTo({
-            top: chatMessages.scrollHeight,
-            behavior: 'smooth'
-        });
+        chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
     }
 
-    function showLoadingIndicator() {
-        const loadingId = 'loading-indicator-bubble';
+    // Global loading spinner used during initial history fetch
+    function showGlobalLoadingIndicator() {
+        const loadingId = 'global-loading';
         if (document.getElementById(loadingId)) return;
-        processedEvents = 0;
         
         const loadingHtml = `
             <div id="${loadingId}" class="message ai-message">
-                <div class="avatar ai-avatar active" id="loading-avatar"><i id="loading-icon" class="fa-solid fa-microchip fa-spin"></i></div>
+                <div class="avatar ai-avatar"><i class="fa-solid fa-microchip"></i></div>
                 <div class="message-content bubble-glass">
-                    <div class="dynamic-loader">
-                        <span id="loading-text">Initializing Intellectra AI...</span>
+                    <div class="dna-spinner">
+                        <div class="dna-strand"></div>
+                        <div class="dna-strand"></div>
+                        <div class="dna-strand"></div>
+                        <div class="dna-strand"></div>
                     </div>
                 </div>
             </div>
@@ -303,50 +189,91 @@ document.addEventListener('DOMContentLoaded', () => {
         scrollToBottom();
     }
 
-    function processEvent(event) {
-        const iconEl = document.getElementById('loading-icon');
-        const textEl = document.getElementById('loading-text');
-        const avatarEl = document.getElementById('loading-avatar');
-        if (!iconEl || !textEl || !avatarEl) return;
-
-        if (event.type === 'start') {
-            avatarEl.className = 'avatar ai-avatar active';
-            if (event.agent === 'SearchAgent') {
-                iconEl.className = 'fa-solid fa-magnifying-glass fa-spin';
-                textEl.textContent = 'Searching knowledge bases...';
-            } else if (event.agent === 'SummarizationAgent') {
-                iconEl.className = 'fa-solid fa-compress fa-fade';
-                textEl.textContent = 'Summarizing research...';
-            } else if (event.agent === 'CitationAgent') {
-                iconEl.className = 'fa-solid fa-quote-right fa-bounce';
-                textEl.textContent = 'Extracting citations...';
-            } else if (event.agent === 'SimilarityAgent') {
-                iconEl.className = 'fa-solid fa-network-wired fa-pulse';
-                textEl.textContent = 'Finding semantic connections...';
-            } else if (event.agent === 'SynthesisAgent') {
-                iconEl.className = 'fa-solid fa-pen-nib fa-shake';
-                textEl.textContent = 'Synthesizing final report...';
-            }
-        } else if (event.type === 'log') {
-            const msg = event.message.toLowerCase();
-            if (msg.includes('rate limit') || msg.includes('429')) {
-                avatarEl.className = 'avatar ai-avatar danger-flash';
-                iconEl.className = 'fa-solid fa-triangle-exclamation';
-                textEl.textContent = 'API Rate limit hit. Waiting...';
-            } else if (msg.includes('sleeping')) {
-                 textEl.textContent = event.message;
-            } else {
-                if (avatarEl.classList.contains('danger-flash')) {
-                    avatarEl.className = 'avatar ai-avatar active';
-                    iconEl.className = 'fa-solid fa-microchip fa-spin';
-                }
-            }
-        }
+    function removeGlobalLoadingIndicator() {
+        const el = document.getElementById('global-loading');
+        if (el) el.remove();
     }
 
-    function removeLoadingIndicator() {
-        const el = document.getElementById('loading-indicator-bubble');
-        if (el) el.remove();
+    // Multi-Agent Event Processing
+    const agentIcons = {
+        'SearchAgent': 'fa-magnifying-glass',
+        'SummarizationAgent': 'fa-compress',
+        'CitationAgent': 'fa-quote-right',
+        'SimilarityAgent': 'fa-network-wired',
+        'SynthesisAgent': 'fa-pen-nib'
+    };
+    
+    const agentColors = {
+        'SearchAgent': 'ai-bubble-search',
+        'SummarizationAgent': 'ai-bubble-summary',
+        'CitationAgent': 'ai-bubble-citation',
+        'SimilarityAgent': 'ai-bubble-similarity',
+        'SynthesisAgent': 'ai-bubble-synthesis'
+    };
+
+    function processEvent(event) {
+        if (event.type === 'start') {
+            const iconClass = agentIcons[event.agent] || 'fa-robot';
+            const colorClass = agentColors[event.agent] || '';
+            const agentTitle = event.agent.replace('Agent', ' Agent');
+
+            const msgHTML = `
+                <div class="message ai-message" id="bubble-${event.agent}">
+                    <div class="avatar ai-avatar active"><i class="fa-solid ${iconClass}"></i></div>
+                    <div class="message-content bubble-glass ${colorClass}">
+                        <div style="font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; opacity: 0.8; text-transform: uppercase;">
+                            ${agentTitle}
+                        </div>
+                        <div class="agent-logs" style="font-size: 0.95rem; line-height: 1.5; color: var(--text-sec);">
+                            <div class="dna-spinner" style="justify-content: flex-start; margin-top: 10px;">
+                                <div class="dna-strand"></div><div class="dna-strand"></div>
+                                <div class="dna-strand"></div><div class="dna-strand"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatMessages.insertAdjacentHTML('beforeend', msgHTML);
+            activeAgentBubble = document.getElementById(`bubble-${event.agent}`);
+            scrollToBottom();
+        } 
+        else if (event.type === 'log') {
+            if (activeAgentBubble) {
+                const logsContainer = activeAgentBubble.querySelector('.agent-logs');
+                // Remove spinner if it exists
+                const spinner = logsContainer.querySelector('.dna-spinner');
+                if (spinner) spinner.remove();
+
+                const logLine = document.createElement('div');
+                logLine.className = 'typewriter-text';
+                logLine.textContent = event.message;
+                logsContainer.appendChild(logLine);
+                
+                // Typing effect animation
+                gsap.fromTo(logLine, 
+                    { opacity: 0, y: 5 }, 
+                    { opacity: 1, y: 0, duration: 0.4 }
+                );
+                
+                scrollToBottom();
+            }
+        }
+        else if (event.type === 'end') {
+            if (activeAgentBubble) {
+                const avatar = activeAgentBubble.querySelector('.avatar');
+                avatar.classList.remove('active');
+                
+                const icon = avatar.querySelector('i');
+                icon.className = 'fa-solid fa-check';
+                
+                // Optional: remove typing spinners if any remain
+                const logsContainer = activeAgentBubble.querySelector('.agent-logs');
+                const spinner = logsContainer.querySelector('.dna-spinner');
+                if (spinner) spinner.remove();
+
+                activeAgentBubble = null;
+            }
+        }
     }
 
     // --- API & Synthesis Flow ---
@@ -354,34 +281,24 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         
         const topic = chatInput.value.trim();
-        const filesToUpload = [...selectedFiles];
-        
-        if (!topic && filesToUpload.length === 0) return;
+        if (!topic) return;
 
-        // Hide landing hero if exists
-        const landingHero = document.getElementById('landing-hero');
-        if (landingHero) {
-            gsap.to(landingHero, { opacity: 0, height: 0, duration: 0.5, onComplete: () => landingHero.remove() });
-        }
+        hideLandingHero();
 
         // 1. UI Updates
-        appendUserMessage(topic, filesToUpload);
+        appendUserMessage(topic);
         
         chatInput.value = '';
         chatInput.style.height = 'auto';
-        selectedFiles = [];
-        renderAttachments();
         validateInput();
         
         chatInput.disabled = true;
-        fileUpload.disabled = true;
-        
-        showLoadingIndicator();
 
         // 2. Submit to API
         const formData = new FormData();
-        if (topic) formData.append('topic', topic);
-        filesToUpload.forEach(f => formData.append('files', f));
+        formData.append('topic', topic);
+
+        processedEvents = 0;
 
         try {
             const response = await fetch('/api/synthesize', {
@@ -392,12 +309,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (!response.ok) throw new Error(data.detail || "Failed to start synthesis.");
             
-            const taskId = data.task_id;
+            currentTaskId = data.task_id;
             
             // 3. Poll Status
             pollInterval = setInterval(async () => {
                 try {
-                    const statusRes = await fetch(`/api/status/${taskId}`);
+                    const statusRes = await fetch(`/api/status/${currentTaskId}`);
                     const statusData = await statusRes.json();
                     
                     if (statusData.events) {
@@ -426,17 +343,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function finishSynthesis(data) {
-        removeLoadingIndicator();
+        removeGlobalLoadingIndicator();
         chatInput.disabled = false;
-        fileUpload.disabled = false;
         
         currentTaskId = data.task_id;
         
         // Chat Message
         appendAIMessage(`
             <p><i class="fa-solid fa-circle-check" style="color: #10b981;"></i> Synthesis Complete!</p>
-            <p style="margin-top: 10px;">I've gathered the research, analyzed the documents, and compiled a comprehensive literature review. I've opened it in the Research Panel for you.</p>
-        `);
+            <p style="margin-top: 10px;">The multi-agent pipeline has finished processing. I've opened the comprehensive literature review in the Research Panel.</p>
+        `, 'ai-bubble-synthesis');
 
         // Populate Right Panel
         try {
@@ -475,10 +391,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tempDiv = document.createElement('div');
                 tempDiv.className = 'mermaid';
                 tempDiv.textContent = block.textContent;
-                // Replace the parent <pre> with the new div
                 block.parentNode.replaceWith(tempDiv);
             });
-            // Initialize mermaid on the newly added divs
             try {
                 mermaid.init(undefined, reportContent.querySelectorAll('.mermaid'));
             } catch (e) {
@@ -486,16 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        researchPanel.classList.remove('collapsed');
-        // Force inline styles in case browser has cached old CSS
-        researchPanel.style.width = '450px';
-        researchPanel.style.opacity = '1';
-        researchPanel.style.padding = '1.5rem';
-        researchPanel.style.borderLeft = '1px solid var(--border-color)';
-        researchPanel.style.marginLeft = '0';
-        researchPanel.style.display = 'flex';
-        
-        gsap.fromTo(researchPanel, { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.6, ease: "power2.out" });
+        gsap.fromTo(reportContent, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" });
     }
 
     const cqForm = document.getElementById('cq-form');
@@ -544,9 +449,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleError(errorMsg) {
-        removeLoadingIndicator();
+        removeGlobalLoadingIndicator();
+        if (activeAgentBubble) {
+            const logsContainer = activeAgentBubble.querySelector('.agent-logs');
+            if (logsContainer) {
+                const spinner = logsContainer.querySelector('.dna-spinner');
+                if (spinner) spinner.remove();
+            }
+            activeAgentBubble = null;
+        }
         chatInput.disabled = false;
-        fileUpload.disabled = false;
         
         appendAIMessage(`
             <p><i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> An error occurred during synthesis:</p>
@@ -555,25 +467,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Right Panel Actions ---
-    closePanelBtn.addEventListener('click', () => {
-        researchPanel.classList.add('collapsed');
-    });
+    if (closePanelBtn) {
+        closePanelBtn.addEventListener('click', () => {
+            // Panel is permanently visible in 3-panel layout, do nothing or just clear content
+            reportContent.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-microscope" style="margin-bottom: 1rem;"></i>
+                    <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Awaiting Research Query</h4>
+                    <p style="font-size: 0.9rem;">Submit a topic in the chat to generate a comprehensive literature review.</p>
+                </div>
+            `;
+            document.getElementById('citations-section').classList.add('hidden');
+            document.getElementById('counter-questions-section').classList.add('hidden');
+        });
+    }
 
     exportPdfBtn.addEventListener('click', () => {
         const element = document.getElementById('report-content');
-        if(element.querySelector('.empty-state')) return; // nothing to export
+        if(element.querySelector('.empty-state')) return;
         
-        // Apply temporary styling and footer for PDF export
         element.classList.add('pdf-export-mode');
         const footer = document.createElement('div');
         footer.id = 'pdf-temp-footer';
         footer.className = 'pdf-footer';
-        footer.innerHTML = '&copy; Intellectra AI - Copyright Issues';
+        footer.innerHTML = '&copy; Research Synthesizer';
         element.appendChild(footer);
 
         const opt = {
             margin:       0.5,
-            filename:     'Agentic_Research_Synthesis.pdf',
+            filename:     'Research_Synthesis.pdf',
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2 },
             jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
@@ -581,7 +503,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         html2pdf().set(opt).from(element).save().then(() => {
-            // Remove temporary styling and footer after export
             element.classList.remove('pdf-export-mode');
             const f = document.getElementById('pdf-temp-footer');
             if (f) f.remove();
