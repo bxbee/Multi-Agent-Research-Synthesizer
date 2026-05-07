@@ -66,14 +66,54 @@
                 </div>
             </div>
             
-            <!-- DNA Loading Spinner (Hidden by default) -->
-            <div id="loading-indicator" class="loading-container hidden">
-                <div class="dna-spinner">
-                    <div class="dna-strand"></div>
-                    <div class="dna-strand"></div>
-                    <div class="dna-strand"></div>
+            <!-- Agent Dashboard Visualizer (Hidden by default) -->
+            <div id="agent-dashboard" class="agent-dashboard hidden">
+                <h3 class="dashboard-title">Agentic Processing Pipeline</h3>
+                <div class="agent-pipeline">
+                    <div class="agent-node" id="node-SearchAgent">
+                        <div class="agent-avatar"><i class="fa-solid fa-magnifying-glass"></i></div>
+                        <div class="agent-name">Search</div>
+                        <div class="agent-status">Waiting</div>
+                    </div>
+                    <div class="pipeline-connector" id="conn-1"></div>
+                    <div class="agent-node" id="node-SummarizationAgent">
+                        <div class="agent-avatar"><i class="fa-solid fa-compress"></i></div>
+                        <div class="agent-name">Summarizer</div>
+                        <div class="agent-status">Waiting</div>
+                    </div>
+                    <div class="pipeline-connector" id="conn-2"></div>
+                    <div class="agent-node" id="node-CitationAgent">
+                        <div class="agent-avatar"><i class="fa-solid fa-quote-right"></i></div>
+                        <div class="agent-name">Citation</div>
+                        <div class="agent-status">Waiting</div>
+                    </div>
+                    <div class="pipeline-connector" id="conn-3"></div>
+                    <div class="agent-node" id="node-SimilarityAgent">
+                        <div class="agent-avatar"><i class="fa-solid fa-network-wired"></i></div>
+                        <div class="agent-name">Similarity</div>
+                        <div class="agent-status">Waiting</div>
+                    </div>
+                    <div class="pipeline-connector" id="conn-4"></div>
+                    <div class="agent-node" id="node-SynthesisAgent">
+                        <div class="agent-avatar"><i class="fa-solid fa-pen-nib"></i></div>
+                        <div class="agent-name">Synthesis</div>
+                        <div class="agent-status">Waiting</div>
+                    </div>
                 </div>
-                <p class="loading-text">Synthesizing literature...</p>
+                
+                <div class="terminal-log bubble-glass">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <span class="terminal-title">Live Execution Logs</span>
+                    </div>
+                    <div id="terminal-content" class="terminal-content custom-scroll">
+                        <div class="log-entry system"><span class="log-time"></span> System initialized. Waiting for task...</div>
+                    </div>
+                </div>
             </div>
 
             <div class="chat-input-wrapper">

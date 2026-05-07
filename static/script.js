@@ -8,7 +8,56 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileUpload = document.getElementById('file-upload');
     const attachmentPreview = document.getElementById('attachment-preview');
     
-    const loadingIndicator = document.getElementById('loading-indicator');
+    const agentDashboard = document.getElementById('agent-dashboard');
+    const terminalContent = document.getElementById('terminal-content');
+    
+    let processedEvents = 0;
+
+    function resetDashboard() {
+        processedEvents = 0;
+        terminalContent.innerHTML = `<div class="log-entry system"><span class="log-time">${new Date().toLocaleTimeString()}</span> System initialized. Waiting for task...</div>`;
+        document.querySelectorAll('.agent-node').forEach(node => {
+            node.className = 'agent-node';
+            node.querySelector('.agent-status').textContent = 'Waiting';
+        });
+        document.querySelectorAll('.pipeline-connector').forEach(conn => {
+            conn.className = 'pipeline-connector';
+        });
+    }
+
+    function processEvent(event) {
+        const timeStr = new Date(event.timestamp).toLocaleTimeString();
+        
+        if (event.type === 'log') {
+            const html = `<div class="log-entry ${event.agent}"><span class="log-time">[${timeStr}]</span> ${event.message}</div>`;
+            terminalContent.insertAdjacentHTML('beforeend', html);
+            terminalContent.scrollTop = terminalContent.scrollHeight;
+        } else if (event.type === 'start') {
+            const node = document.getElementById(`node-${event.agent}`);
+            if (node) {
+                node.className = 'agent-node active';
+                node.querySelector('.agent-status').textContent = 'Processing';
+            }
+            const agentIds = ['SearchAgent', 'SummarizationAgent', 'CitationAgent', 'SimilarityAgent', 'SynthesisAgent'];
+            const idx = agentIds.indexOf(event.agent);
+            if (idx > 0) {
+                const conn = document.getElementById(`conn-${idx}`);
+                if (conn) conn.className = 'pipeline-connector active';
+            }
+        } else if (event.type === 'end') {
+            const node = document.getElementById(`node-${event.agent}`);
+            if (node) {
+                node.className = 'agent-node completed';
+                node.querySelector('.agent-status').textContent = 'Done';
+            }
+            const agentIds = ['SearchAgent', 'SummarizationAgent', 'CitationAgent', 'SimilarityAgent', 'SynthesisAgent'];
+            const idx = agentIds.indexOf(event.agent);
+            if (idx > 0) {
+                const conn = document.getElementById(`conn-${idx}`);
+                if (conn) conn.className = 'pipeline-connector completed';
+            }
+        }
+    }
     
     const researchPanel = document.getElementById('research-panel');
     const reportContent = document.getElementById('report-content');
@@ -53,12 +102,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadHistoryItem(taskId) {
         try {
-            loadingIndicator.classList.remove('hidden');
+            agentDashboard.classList.remove('hidden');
             const res = await fetch(`/api/history/${taskId}`);
             if (!res.ok) throw new Error("Failed to load history item");
             const data = await res.json();
             
-            loadingIndicator.classList.add('hidden');
+            agentDashboard.classList.add('hidden');
             finishSynthesis(data);
         } catch(e) {
             handleError(e.message);
@@ -208,7 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
         chatInput.disabled = true;
         fileUpload.disabled = true;
         
-        loadingIndicator.classList.remove('hidden');
+        agentDashboard.classList.remove('hidden');
+        resetDashboard();
         scrollToBottom();
 
         // 2. Submit to API
@@ -233,6 +283,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const statusRes = await fetch(`/api/status/${taskId}`);
                     const statusData = await statusRes.json();
                     
+                    if (statusData.events) {
+                        for (let i = processedEvents; i < statusData.events.length; i++) {
+                            processEvent(statusData.events[i]);
+                        }
+                        processedEvents = statusData.events.length;
+                    }
+                    
                     if (statusData.status === "completed") {
                         clearInterval(pollInterval);
                         loadHistory(); // refresh history list
@@ -252,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function finishSynthesis(data) {
-        loadingIndicator.classList.add('hidden');
+        agentDashboard.classList.add('hidden');
         chatInput.disabled = false;
         fileUpload.disabled = false;
         
@@ -356,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleError(errorMsg) {
-        loadingIndicator.classList.add('hidden');
+        agentDashboard.classList.add('hidden');
         chatInput.disabled = false;
         fileUpload.disabled = false;
         

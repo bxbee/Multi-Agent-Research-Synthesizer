@@ -26,18 +26,21 @@ class State:
         self.synthesis_report = "" # Final compiled text
 
 class Agent:
-    def __init__(self, name: str, client: genai.Client):
+    def __init__(self, name: str, client: genai.Client, event_callback=None):
         self.name = name
         self.client = client
         self.model_id = "gemini-2.5-flash"
+        self.event_callback = event_callback
         
     def log(self, message: str):
         print(f"[{self.name}] {message}")
+        if self.event_callback:
+            self.event_callback({"agent": self.name, "type": "log", "message": message})
 
 class SearchAgent(Agent):
     """Hits external scholarly APIs (arXiv) to retrieve research papers."""
-    def __init__(self, client):
-        super().__init__("SearchAgent", client)
+    def __init__(self, client, event_callback=None):
+        super().__init__("SearchAgent", client, event_callback)
         
     async def execute(self, state: State):
         self.log(f"Searching for topic: {state.topic}")
@@ -85,8 +88,8 @@ class SearchAgent(Agent):
 
 class SummarizationAgent(Agent):
     """Produces succinct academic summaries of raw texts or abstracts."""
-    def __init__(self, client):
-        super().__init__("SummarizationAgent", client)
+    def __init__(self, client, event_callback=None):
+        super().__init__("SummarizationAgent", client, event_callback)
         
     async def _summarize_text(self, text: str) -> str:
         prompt = f"Provide a 200-300 word summary highlighting contributions and methods for the following:\n\n{text[:50000]}"
@@ -121,8 +124,8 @@ class SummarizationAgent(Agent):
 
 class CitationAgent(Agent):
     """Generates accurate citations based on paper metadata."""
-    def __init__(self, client):
-        super().__init__("CitationAgent", client)
+    def __init__(self, client, event_callback=None):
+        super().__init__("CitationAgent", client, event_callback)
         
     async def _cite(self, paper: dict) -> str:
         prompt = f"Generate an APA format citation for the following paper. Provide ONLY the citation, nothing else:\nTitle: {paper.get('title')}\nAuthors: {', '.join(paper.get('authors', []))}\nYear: {paper.get('year')}\nLink: {paper.get('link')}"
@@ -152,8 +155,8 @@ class CitationAgent(Agent):
 
 class SimilarityAgent(Agent):
     """Identifies related research connections between the papers."""
-    def __init__(self, client):
-        super().__init__("SimilarityAgent", client)
+    def __init__(self, client, event_callback=None):
+        super().__init__("SimilarityAgent", client, event_callback)
 
     async def execute(self, state: State):
         self.log("Identifying related research fields and connections...")
@@ -180,8 +183,8 @@ class SimilarityAgent(Agent):
 
 class SynthesisAgent(Agent):
     """Synthesizes all gathered data into a cohesive Literature Review."""
-    def __init__(self, client):
-        super().__init__("SynthesisAgent", client)
+    def __init__(self, client, event_callback=None):
+        super().__init__("SynthesisAgent", client, event_callback)
 
     async def execute(self, state: State):
         self.log("Drafting the final structured literature review...")
@@ -245,7 +248,7 @@ class SynthesisAgent(Agent):
         state.synthesis_report = report
         self.log("Completed compilation of the final report.")
 
-async def run_workflow(api_key: str, topic: str = "", local_pdfs: List[str] = []) -> State:
+async def run_workflow(api_key: str, topic: str = "", local_pdfs: List[str] = [], event_callback=None) -> State:
     client = genai.Client(api_key=api_key)
     state = State()
     state.topic = topic
@@ -266,15 +269,19 @@ async def run_workflow(api_key: str, topic: str = "", local_pdfs: List[str] = []
                 print(f"Error reading {pdf}: {e}")
             
     agents = [
-        SearchAgent(client),
-        SummarizationAgent(client),
-        CitationAgent(client),
-        SimilarityAgent(client),
-        SynthesisAgent(client)
+        SearchAgent(client, event_callback),
+        SummarizationAgent(client, event_callback),
+        CitationAgent(client, event_callback),
+        SimilarityAgent(client, event_callback),
+        SynthesisAgent(client, event_callback)
     ]
     
     for agent in agents:
+        if event_callback:
+            event_callback({"agent": agent.name, "type": "start"})
         await agent.execute(state)
+        if event_callback:
+            event_callback({"agent": agent.name, "type": "end"})
         
     return state
 

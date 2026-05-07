@@ -44,8 +44,21 @@ async def read_index():
 
 async def run_synthesis_task(task_id: str, api_key: str, topic: str, saved_files: list, temp_dir: str):
     try:
-        state = await run_workflow(api_key, topic=topic or "", local_pdfs=saved_files)
-        tasks[task_id] = {"status": "completed", "report": state.synthesis_report, "citations": state.citations, "task_id": task_id}
+        def emit_event(event_data: dict):
+            event_data["timestamp"] = datetime.now().isoformat()
+            if task_id in tasks:
+                if "events" not in tasks[task_id]:
+                    tasks[task_id]["events"] = []
+                tasks[task_id]["events"].append(event_data)
+                
+        state = await run_workflow(api_key, topic=topic or "", local_pdfs=saved_files, event_callback=emit_event)
+        
+        if task_id in tasks:
+            tasks[task_id].update({
+                "status": "completed", 
+                "report": state.synthesis_report, 
+                "citations": state.citations
+            })
         
         history = load_history()
         history[task_id] = {
@@ -59,7 +72,8 @@ async def run_synthesis_task(task_id: str, api_key: str, topic: str, saved_files
         save_history(history)
         
     except Exception as e:
-        tasks[task_id] = {"status": "error", "detail": str(e)}
+        if task_id in tasks:
+            tasks[task_id].update({"status": "error", "detail": str(e)})
     finally:
         if temp_dir:
             shutil.rmtree(temp_dir, ignore_errors=True)
@@ -93,7 +107,7 @@ async def synthesize_papers(
             raise HTTPException(status_code=400, detail="Please provide either a Topic string or PDF files.")
             
         task_id = str(uuid.uuid4())
-        tasks[task_id] = {"status": "processing"}
+        tasks[task_id] = {"status": "processing", "task_id": task_id, "events": []}
         
         background_tasks.add_task(run_synthesis_task, task_id, api_key, topic, saved_files, temp_dir)
         
