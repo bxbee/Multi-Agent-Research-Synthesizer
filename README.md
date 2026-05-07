@@ -50,7 +50,7 @@ graph TD
 cd D:\ResearchPaperSynthezier
 ```
 
-## 🛠 Setup
+# 🛠 Setup
 Why:
 You should run all commands from the project root so the app can find the Python files, the `static/` folder, and the `.env` file.
 
