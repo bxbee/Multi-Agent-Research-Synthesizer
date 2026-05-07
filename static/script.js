@@ -1,4 +1,94 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Advanced GSAP & Canvas Visuals ---
+    // Custom Cursor
+    const cursorGlow = document.querySelector('.cursor-glow');
+    const cursorDot = document.querySelector('.cursor-dot');
+    
+    if (cursorGlow && cursorDot) {
+        window.addEventListener('mousemove', (e) => {
+            gsap.to(cursorDot, { x: e.clientX, y: e.clientY, duration: 0.1, ease: "power2.out" });
+            gsap.to(cursorGlow, { x: e.clientX, y: e.clientY, duration: 0.6, ease: "power2.out" });
+        });
+    }
+
+    // Neural Network Canvas
+    const canvas = document.getElementById('neural-bg');
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+        
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.radius = Math.random() * 2 + 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if(this.x < 0 || this.x > width) this.vx *= -1;
+                if(this.y < 0 || this.y > height) this.vy *= -1;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(124, 58, 237, 0.4)';
+                ctx.fill();
+            }
+        }
+        
+        for(let i=0; i<80; i++) particles.push(new Particle());
+        
+        function animateCanvas() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            
+            for(let i=0; i<particles.length; i++) {
+                for(let j=i+1; j<particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if(dist < 150) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(6, 182, 212, ${(1 - dist/150) * 0.5})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animateCanvas);
+        }
+        animateCanvas();
+    }
+
+    // Magnetic Buttons (Apply slightly after DOM load)
+    setTimeout(() => {
+        document.querySelectorAll('.btn, .icon-btn, .feature-card, .history-item').forEach(el => {
+            el.addEventListener('mousemove', (e) => {
+                const rect = el.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                gsap.to(el, { x: x * 0.2, y: y * 0.2, duration: 0.3, ease: "power2.out" });
+            });
+            el.addEventListener('mouseleave', () => {
+                gsap.to(el, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
+            });
+        });
+    }, 1000);
+
+    // --- Core Logic ---
     // DOM Elements
     const chatInput = document.getElementById('chat-input');
     const chatForm = document.getElementById('chat-form');
@@ -103,11 +193,19 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadHistoryItem(taskId) {
         try {
             agentDashboard.classList.remove('hidden');
+            gsap.fromTo(agentDashboard, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" });
             const res = await fetch(`/api/history/${taskId}`);
             if (!res.ok) throw new Error("Failed to load history item");
             const data = await res.json();
             
             agentDashboard.classList.add('hidden');
+            
+            // Hide landing hero if exists
+            const landingHero = document.getElementById('landing-hero');
+            if (landingHero) {
+                gsap.to(landingHero, { opacity: 0, height: 0, duration: 0.5, onComplete: () => landingHero.remove() });
+            }
+            
             finishSynthesis(data);
         } catch(e) {
             handleError(e.message);
@@ -245,6 +343,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!topic && filesToUpload.length === 0) return;
 
+        // Hide landing hero if exists
+        const landingHero = document.getElementById('landing-hero');
+        if (landingHero) {
+            gsap.to(landingHero, { opacity: 0, height: 0, duration: 0.5, onComplete: () => landingHero.remove() });
+        }
+
         // 1. UI Updates
         appendUserMessage(topic, filesToUpload);
         
@@ -258,6 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fileUpload.disabled = true;
         
         agentDashboard.classList.remove('hidden');
+        gsap.fromTo(agentDashboard, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" });
         resetDashboard();
         scrollToBottom();
 
@@ -365,6 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         researchPanel.classList.remove('collapsed');
+        gsap.fromTo(researchPanel, { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.6, ease: "power2.out" });
     }
 
     const cqForm = document.getElementById('cq-form');

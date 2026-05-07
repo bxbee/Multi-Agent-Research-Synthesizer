@@ -13,16 +13,16 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <!-- GSAP for Advanced Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
-    <div class="background-particles">
-        <!-- Floating particles animation will be handled by CSS -->
-        <div class="particle p1"></div>
-        <div class="particle p2"></div>
-        <div class="particle p3"></div>
-        <div class="particle p4"></div>
-        <div class="particle p5"></div>
-    </div>
+    <!-- Custom Cursor -->
+    <div class="cursor-glow"></div>
+    <div class="cursor-dot"></div>
+
+    <!-- Neural Network Background -->
+    <canvas id="neural-bg" class="neural-bg"></canvas>
 
     <div class="app-container">
         <!-- LEFT SIDEBAR -->
@@ -57,11 +57,29 @@
             </header>
             
             <div id="chat-messages" class="chat-messages custom-scroll">
-                <!-- Welcome Message -->
-                <div class="message ai-message">
-                    <div class="avatar ai-avatar"><i class="fa-solid fa-robot"></i></div>
-                    <div class="message-content bubble-glass">
-                        <p>Hello! I am Intellectra AI. What topic would you like me to research today? You can also upload local PDFs for me to analyze.</p>
+                <!-- Welcome Message / Landing Hero -->
+                <div id="landing-hero" class="hero-section">
+                    <div class="hero-content">
+                        <div class="ai-pulse-ring">
+                            <div class="avatar ai-avatar hero-avatar"><i class="fa-solid fa-brain"></i></div>
+                        </div>
+                        <h1 class="hero-title">Synthesize <span class="gradient-text">Intelligence</span></h1>
+                        <p class="hero-subtitle">Upload research papers or enter a topic. Our multi-agent neural pipeline will extract, cross-reference, and generate a comprehensive literature review.</p>
+                        
+                        <div class="feature-cards">
+                            <div class="feature-card">
+                                <i class="fa-solid fa-bolt"></i>
+                                <span>Parallel Processing</span>
+                            </div>
+                            <div class="feature-card">
+                                <i class="fa-solid fa-network-wired"></i>
+                                <span>Semantic Connection</span>
+                            </div>
+                            <div class="feature-card">
+                                <i class="fa-solid fa-file-pdf"></i>
+                                <span>Local PDF Parsing</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
