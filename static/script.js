@@ -314,30 +314,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (event.agent === 'SearchAgent') {
                 iconEl.className = 'fa-solid fa-magnifying-glass fa-spin';
                 textEl.textContent = 'Searching knowledge bases...';
-            } else if (event.agent === 'SummarizerAgent') {
+            } else if (event.agent === 'SummarizationAgent') {
                 iconEl.className = 'fa-solid fa-compress fa-fade';
-                textEl.textContent = 'Summarizing corpus...';
-            } else if (event.agent === 'MethodologyAnalyzer') {
-                iconEl.className = 'fa-solid fa-flask fa-beat';
-                textEl.textContent = 'Comparing methodologies...';
-            } else if (event.agent === 'CrossReferenceAgent') {
-                iconEl.className = 'fa-solid fa-network-wired fa-pulse';
-                textEl.textContent = 'Finding thematic relationships...';
-            } else if (event.agent === 'TrendAnalyzer') {
-                iconEl.className = 'fa-solid fa-chart-line fa-bounce';
-                textEl.textContent = 'Detecting industry trends...';
-            } else if (event.agent === 'ContradictionDetector') {
-                iconEl.className = 'fa-solid fa-code-compare fa-flip';
-                textEl.textContent = 'Detecting contradictions...';
-            } else if (event.agent === 'ResearchGapFinder') {
-                iconEl.className = 'fa-solid fa-binoculars fa-shake';
-                textEl.textContent = 'Identifying research gaps...';
+                textEl.textContent = 'Summarizing research...';
             } else if (event.agent === 'CitationAgent') {
                 iconEl.className = 'fa-solid fa-quote-right fa-bounce';
-                textEl.textContent = 'Formatting citations...';
-            } else if (event.agent === 'LiteratureReviewAgent') {
-                iconEl.className = 'fa-solid fa-pen-nib fa-beat-fade';
-                textEl.textContent = 'Synthesizing final literature review...';
+                textEl.textContent = 'Extracting citations...';
+            } else if (event.agent === 'SimilarityAgent') {
+                iconEl.className = 'fa-solid fa-network-wired fa-pulse';
+                textEl.textContent = 'Finding semantic connections...';
+            } else if (event.agent === 'SynthesisAgent') {
+                iconEl.className = 'fa-solid fa-pen-nib fa-shake';
+                textEl.textContent = 'Synthesizing final report...';
             }
         } else if (event.type === 'log') {
             const msg = event.message.toLowerCase();
