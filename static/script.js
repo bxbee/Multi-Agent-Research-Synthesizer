@@ -439,7 +439,12 @@ document.addEventListener('DOMContentLoaded', () => {
         `);
 
         // Populate Right Panel
-        reportContent.innerHTML = marked.parse(data.report);
+        try {
+            reportContent.innerHTML = marked.parse(data.report || "*No synthesis report generated.*");
+        } catch (e) {
+            console.error("Markdown parsing error", e);
+            reportContent.innerHTML = "<p>Error displaying report.</p>";
+        }
         
         // Render Citations
         const citationsSection = document.getElementById('citations-section');
@@ -482,6 +487,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         researchPanel.classList.remove('collapsed');
+        // Force inline styles in case browser has cached old CSS
+        researchPanel.style.width = '450px';
+        researchPanel.style.opacity = '1';
+        researchPanel.style.padding = '1.5rem';
+        researchPanel.style.borderLeft = '1px solid var(--border-color)';
+        researchPanel.style.marginLeft = '0';
+        researchPanel.style.display = 'flex';
+        
         gsap.fromTo(researchPanel, { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.6, ease: "power2.out" });
     }
 
