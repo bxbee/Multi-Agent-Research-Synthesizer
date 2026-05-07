@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileUpload = document.getElementById('file-upload');
     const attachmentPreview = document.getElementById('attachment-preview');
     
-    // Removed agent dashboard variables and functions
+    let processedEvents = 0;
     
     const researchPanel = document.getElementById('research-panel');
     const reportContent = document.getElementById('report-content');
@@ -287,21 +287,61 @@ document.addEventListener('DOMContentLoaded', () => {
     function showLoadingIndicator() {
         const loadingId = 'loading-indicator-bubble';
         if (document.getElementById(loadingId)) return;
+        processedEvents = 0;
         
         const loadingHtml = `
             <div id="${loadingId}" class="message ai-message">
-                <div class="avatar ai-avatar"><i class="fa-solid fa-robot"></i></div>
+                <div class="avatar ai-avatar active" id="loading-avatar"><i id="loading-icon" class="fa-solid fa-microchip fa-spin"></i></div>
                 <div class="message-content bubble-glass">
-                    <div class="typing-indicator">
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
+                    <div class="dynamic-loader">
+                        <span id="loading-text">Initializing Intellectra AI...</span>
                     </div>
                 </div>
             </div>
         `;
         chatMessages.insertAdjacentHTML('beforeend', loadingHtml);
         scrollToBottom();
+    }
+
+    function processEvent(event) {
+        const iconEl = document.getElementById('loading-icon');
+        const textEl = document.getElementById('loading-text');
+        const avatarEl = document.getElementById('loading-avatar');
+        if (!iconEl || !textEl || !avatarEl) return;
+
+        if (event.type === 'start') {
+            avatarEl.className = 'avatar ai-avatar active';
+            if (event.agent === 'SearchAgent') {
+                iconEl.className = 'fa-solid fa-magnifying-glass fa-spin';
+                textEl.textContent = 'Searching knowledge bases...';
+            } else if (event.agent === 'SummarizationAgent') {
+                iconEl.className = 'fa-solid fa-compress fa-fade';
+                textEl.textContent = 'Summarizing research...';
+            } else if (event.agent === 'CitationAgent') {
+                iconEl.className = 'fa-solid fa-quote-right fa-bounce';
+                textEl.textContent = 'Extracting citations...';
+            } else if (event.agent === 'SimilarityAgent') {
+                iconEl.className = 'fa-solid fa-network-wired fa-pulse';
+                textEl.textContent = 'Finding semantic connections...';
+            } else if (event.agent === 'SynthesisAgent') {
+                iconEl.className = 'fa-solid fa-pen-nib fa-shake';
+                textEl.textContent = 'Synthesizing final report...';
+            }
+        } else if (event.type === 'log') {
+            const msg = event.message.toLowerCase();
+            if (msg.includes('rate limit') || msg.includes('429')) {
+                avatarEl.className = 'avatar ai-avatar danger-flash';
+                iconEl.className = 'fa-solid fa-triangle-exclamation';
+                textEl.textContent = 'API Rate limit hit. Waiting...';
+            } else if (msg.includes('sleeping')) {
+                 textEl.textContent = event.message;
+            } else {
+                if (avatarEl.classList.contains('danger-flash')) {
+                    avatarEl.className = 'avatar ai-avatar active';
+                    iconEl.className = 'fa-solid fa-microchip fa-spin';
+                }
+            }
+        }
     }
 
     function removeLoadingIndicator() {
@@ -359,6 +399,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const statusRes = await fetch(`/api/status/${taskId}`);
                     const statusData = await statusRes.json();
+                    
+                    if (statusData.events) {
+                        for (let i = processedEvents; i < statusData.events.length; i++) {
+                            processEvent(statusData.events[i]);
+                        }
+                        processedEvents = statusData.events.length;
+                    }
                     
                     if (statusData.status === "completed") {
                         clearInterval(pollInterval);
