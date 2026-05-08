@@ -133,7 +133,7 @@ body {
 }
 @keyframes pulseRing {
     0% { transform: scale(0.8); opacity: 1; }
-    100% { transform: scale(2); opacity: 0; }
+    100% { transform: scale(1.5); opacity: 0; }
 }
 
 .hero-avatar {
@@ -480,7 +480,7 @@ body {
     padding: 12px 20px;
     border-radius: var(--radius-lg);
     transition: all 0.3s ease;
-    margin: 0 20px 15px 20px;
+    margin: 0 60px 15px 60px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
