@@ -298,6 +298,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData();
         formData.append('topic', topic);
 
+        // Show loading animation in the synthesis report panel
+        reportContent.innerHTML = `
+            <div class="empty-state" id="report-loading">
+                <div class="dna-spinner" style="margin-bottom: 1rem; transform: scale(1.5);">
+                    <div class="dna-strand"></div><div class="dna-strand"></div>
+                    <div class="dna-strand"></div><div class="dna-strand"></div>
+                </div>
+                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">Generating research synthesis...</h4>
+            </div>
+        `;
+        document.getElementById('citations-section').classList.add('hidden');
+        document.getElementById('counter-questions-section').classList.add('hidden');
+
         processedEvents = 0;
 
         try {
@@ -459,6 +472,16 @@ document.addEventListener('DOMContentLoaded', () => {
             activeAgentBubble = null;
         }
         chatInput.disabled = false;
+        
+        if (reportContent.querySelector('#report-loading')) {
+            reportContent.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-triangle-exclamation" style="margin-bottom: 1rem; color: #ef4444; font-size: 3rem;"></i>
+                    <h4 style="color: #ef4444; margin-bottom: 0.5rem;">Synthesis Failed</h4>
+                    <p style="font-size: 0.9rem;">Please try again or check the chat for details.</p>
+                </div>
+            `;
+        }
         
         appendAIMessage(`
             <p><i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> An error occurred during synthesis:</p>
