@@ -490,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const footer = document.createElement('div');
         footer.id = 'pdf-temp-footer';
         footer.className = 'pdf-footer';
-        footer.innerHTML = '&copy; Research Synthesizer';
+        footer.innerHTML = '&copy; Intellectra AI';
         element.appendChild(footer);
 
         const opt = {
