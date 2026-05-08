@@ -55,9 +55,9 @@ class SearchAgent(Agent):
                     response.raise_for_status()
                     break
                 except requests.exceptions.RequestException as e:
-                    self.log(f"arXiv API attempt {attempt + 1} failed: {e}")
+                    print(f"[{self.name}] arXiv API attempt {attempt + 1} failed: {e}")
                     if attempt == max_retries - 1:
-                        self.log(f"Warning: Failed to fetch from arXiv after {max_retries} attempts. Proceeding with local documents if available.")
+                        self.log("Failed to fetch from arXiv. Proceeding with local documents if available.")
                         return
                     await asyncio.sleep(2 * (attempt + 1))
             
