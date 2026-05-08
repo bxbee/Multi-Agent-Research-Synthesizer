@@ -78,7 +78,7 @@ body {
 .gradient-bg {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh; z-index: -2;
-    background: linear-gradient(135deg, #0f172a, #1e1b4b, #312e81, #0c0a20);
+    background: linear-gradient(135deg, #09090b, #1e1b4b, #4c1d95, #0f172a);
     background-size: 400% 400%;
     animation: gradientFlow 15s ease infinite;
 }
@@ -192,6 +192,8 @@ body {
     border-color: var(--accent-glow);
     background: rgba(124, 58, 237, 0.1);
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    position: relative;
+    z-index: 2;
 }
 
 /* Glassmorphism Utilities */
@@ -202,6 +204,8 @@ body {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+    position: relative;
+    z-index: 10;
 }
 
 .bubble-glass {
@@ -476,7 +480,8 @@ body {
     padding: 12px 20px;
     border-radius: var(--radius-lg);
     transition: all 0.3s ease;
-    margin: 0 20px 20px 20px;
+    margin: 0 20px 15px 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .chat-form:focus-within {
@@ -518,7 +523,8 @@ body {
     text-align: center;
     font-size: 0.75rem;
     color: var(--text-sec);
-    margin-top: 0.8rem;
+    margin-top: 0;
+    margin-bottom: 20px;
 }
 
 /* Buttons */
